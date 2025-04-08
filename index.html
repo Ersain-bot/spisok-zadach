@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список задач</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        .task-done {
+            text-decoration: line-through;
+        }
+    
+        .btn:active {
+            transform: translateY(2px);
+        }
+    
+        .btn-primary:active {
+            background-color: #0069d9;
+            border-color: #0069d9;
+        }
+    
+        .btn-success:active {
+            background-color: #34c759;
+            border-color: #34c759;
+        }
+    
+        .btn-danger:active {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+    
+        .scale-up {
+            animation: scaleUp 0.2s;
+        }
+    
+        @keyframes scaleUp {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+    
+        .scale-down {
+            animation: scaleDown 0.2s;
+        }
+    
+        @keyframes scaleDown {
+            0% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    
+        #timer-text {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 999;
+            background-color: white;
+            padding: 6px 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+    
+        .btn {
+            border-radius: 10px;
+        }
+    
+        .btn-flat {
+            border-radius: 0;
+        }
+    
+        .btn-right {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+    
+        .btn-success {
+            border-radius: 20px;
+        }
+    
+        .btn-3-right {
+            border-top-right-radius: 20px !important;
+            border-bottom-right-radius: 20px !important;
+        }
+    
+        .mr-20 {
+            margin-right: 20px;
+        }
+    
+        /* 👇 Адаптация под мобильные телефоны */
+        @media (max-width: 576px) {
+            .btn-group {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+            }
+    
+            .btn-group .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+    
+            .modal-content {
+                padding: 10px;
+            }
+    
+            .modal-body input {
+                font-size: 16px;
+            }
+    
+            table th, table td {
+                font-size: 14px;
+                padding: 8px;
+            }
+    
+            #timer-text {
+                font-size: 16px;
+                bottom: 5px;
+                right: 5px;
+            }
+    
+            h1, h4.card-title {
+                font-size: 24px;
+                text-align: center;
+            }
+    
+            .btn {
+                font-size: 14px;
+            }
+    
+            .table-responsive {
+                overflow-x: auto;
+            }
+    
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Список задач</h1>
+        <ul id="task-list" class="list-group mt-3">
+            <!-- Задачи будет добавлены динамически -->
+        </ul>
+    </div>
+
+    <!-- Модальное окно для добавления новых задач -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить задачу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="new-task" class="form-control" placeholder="Введите задачу">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="add-task-btn">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для изменения существующих задач -->
+    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Изменить задачу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="edit-task" class="form-control" placeholder="Введите задачу">
+                    <input type="hidden" id="task-index" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="edit-task-btn">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для установки таймера -->
+    <div class="modal fade" id="timerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Установить таймер</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="number" id="timer-value" class="form-control" placeholder="Введите время в минутах">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="start-timer-btn">Начать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12 grid-margin">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">Задачи</h4>
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-primary me-2 rounded" data-bs-toggle="modal" data-bs-target="#addTaskModal">Добавить задачу</button>
+                                <button type="button" class="btn btn-primary me-2 rounded" data-bs-toggle="modal" data-bs-target="#editTaskModal" id="edit-task-button">Изменить</button>
+                                <button type="button" class="btn btn-danger rounded" id="delete-task-button">Удалить</button>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-info me-2 rounded" data-bs-toggle="modal" data-bs-target="#timerModal" id="timer-button">Установить таймер</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Задача</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="task-grid">
+                                    <!-- Задачи будут добавлены динамически -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p id="timer-text"></p>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let tasks = [];
+        let currentTaskIndex = null;
+        let timer = null;
+        let timerValue = 0;
+
+        // Добавление задачи в список
+        function addTask(task) {
+            tasks.push({ text: task, done: false, priority1: false, priority2: false, priority3: false });
+            renderTaskGrid();
+            renderTaskList();
+        }
+
+        // Рендеринг списка задач
+        function renderTaskList() {
+            const taskList = $('#task-list');
+            taskList.empty();
+
+            tasks.forEach((task, index) => {
+                const taskItem = $('<li class="list-group-item">');
+                const taskText = $('<span>').text(task.text);
+                const buttonGroup = $('<div class="btn-group float-end">');
+
+                if (task.done) {
+                    taskText.addClass('task-done');
+                }
+
+                const priority1Button = $('<button class="btn btn-success">1</button>');
+                const priority2Button = $('<button class="btn btn-success">2</button>');
+                const priority3Button = $('<button class="btn btn-success btn-3-right">3</button>');
+
+                priority1Button.click(() => {
+                    task.priority1 = !task.priority1;
+                    if (task.priority1 && task.priority2 && task.priority3) {
+                        task.done = true;
+                    } else {
+                        task.done = false;
+                    }
+                    renderTaskList();
+                    renderTaskGrid();
+                });
+
+                priority2Button.click(() => {
+                    task.priority2 = !task.priority2;
+                    if (task.priority1 && task.priority2 && task.priority3) {
+                        task.done = true;
+                    } else {
+                        task.done = false;
+                    }
+                    renderTaskList();
+                    renderTaskGrid();
+                });
+
+                priority3Button.click(() => {
+                    task.priority3 = !task.priority3;
+                    if (task.priority1 && task.priority2 && task.priority3) {
+                        task.done = true;
+                    } else {
+                        task.done = false;
+                    }
+                    renderTaskList();
+                    renderTaskGrid();
+                });
+
+                const editButton = $('<button class="btn btn-primary me-2 rounded">Изменить</button>');
+                editButton.click(() => {
+                    currentTaskIndex = index;
+                    $('#edit-task').val(task.text);
+                    $('#task-index').val(index);
+                    $('#editTaskModal').modal('show');
+                });
+
+                const deleteButton = $('<button class="btn btn-danger rounded">Удалить</button>');
+                deleteButton.click(() => {
+                    tasks.splice(index, 1);
+                    renderTaskGrid();
+                    renderTaskList();
+                });
+
+                if (task.priority1) {
+                    priority1Button.removeClass('btn-success').addClass('btn-danger');
+                }
+                if (task.priority2) {
+                    priority2Button.removeClass('btn-success').addClass('btn-danger');
+                }
+                if (task.priority3) {
+                    priority3Button.removeClass('btn-success').addClass('btn-danger');
+                }
+
+                buttonGroup.append(priority1Button).append(priority2Button).append(priority3Button).append($(`<span class="mr-20"></span>`)).append(editButton).append(deleteButton);
+                taskItem.append(taskText).append(buttonGroup);
+                taskList.append(taskItem);
+            });
+
+            if (tasks.length === 0) {
+                $('#edit-task-button').prop('disabled', true);
+                $('#delete-task-button').prop('disabled', true);
+            } else {
+                $('#edit-task-button').prop('disabled', false);
+                $('#delete-task-button').prop('disabled', false);
+            }
+        }
+
+        // Рендеринг гриза задач
+        function renderTaskGrid() {
+            const taskGrid = $('#task-grid');
+            taskGrid.empty();
+
+            tasks.forEach((task, index) => {
+                const taskRow = $('<tr>');
+                const taskCell = $('<td>').text(task.text);
+                const statusCell = $('<td>');
+
+                if (task.done) {
+                    statusCell.text('Выполнено');
+                } else {
+                    statusCell.text('Не выполнено');
+                }
+
+                taskRow.append(taskCell).append(statusCell);
+                taskGrid.append(taskRow);
+            });
+        }
+
+        // Обработка добавления новой задачи
+        $('#add-task-btn').click(() => {
+            const newTask = $('#new-task').val();
+            addTask(newTask);
+            $('#new-task').val('');
+            $('#addTaskModal').modal('hide');
+        });
+
+        // Обработка изменения существующей задачи
+        $('#edit-task-btn').click(() => {
+            const taskIndex = $('#task-index').val();
+            tasks[taskIndex].text = $('#edit-task').val();
+            renderTaskGrid();
+            renderTaskList();
+            $('#editTaskModal').modal('hide');
+        });
+
+        // Обработка установки таймера
+        $('#start-timer-btn').click(() => {
+            timerValue = parseInt($('#timer-value').val()) * 60; // Умножаем минуты на 60
+            if (!isNaN(timerValue) && timerValue > 0) {
+                timer = setInterval(() => {
+                    timerValue--;
+                    const minutes = Math.floor(timerValue / 60);
+                    const seconds = timerValue % 60;
+                    $('#timer-text').text(`Осталось времени: ${minutes} минут ${seconds} секунд`);
+                    if (timerValue === 0) {
+                        clearInterval(timer);
+                        timer = null;
+                        $('#timer-text').text('');
+                    }
+                }, 1000);
+            }
+            $('#timerModal').modal('hide');
+        });
+
+        // Добавление начальных задач
+        addTask('Задача 1');
+        addTask('Задача 2');
+
+        $('#edit-task-button').click(() => {
+            if (tasks.length > 0) {
+                $('#edit-task').val(tasks[0].text);
+                $('#task-index').val(0);
+                $('#editTaskModal').modal('show');
+            }
+        });
+
+        $('#delete-task-button').click(() => {
+            if (tasks.length > 0) {
+                tasks.shift();
+                renderTaskGrid();
+                renderTaskList();
+            }
+        });
+
+        $(document).ready(function () {
+            $('.btn').on('mousedown', function () {
+                $(this).addClass('scale-down');
+            });
+
+            $('.btn').on('mouseup', function () {
+                $(this).removeClass('scale-down').addClass('scale-up');
+            });
+
+            $('.btn').on('mouseout', function () {
+                $(this).removeClass('scale-up');
+            });
+        });
+    </script>
+</body>
+</html>
